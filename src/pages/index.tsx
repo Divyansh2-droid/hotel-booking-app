@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import axios from 'axios';
+import { useEffect, useRef, useState } from "react";
+import axios from "axios";
 
 interface Hotel {
   place_id: string;
@@ -19,44 +19,41 @@ export default function Home() {
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [locationName, setLocationName] = useState('');
+  const [locationName, setLocationName] = useState("");
   const autocompleteRef = useRef<HTMLInputElement | null>(null);
   const autocompleteObj = useRef<any>(null);
 
-  // Load Google Maps script and initialize Autocomplete
   useEffect(() => {
     if (!window.google) {
-      const script = document.createElement('script');
+      const script = document.createElement("script");
       script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY}&libraries=places`;
       script.async = true;
-      script.onload = () => {
-        if (autocompleteRef.current) {
-          autocompleteObj.current = new window.google.maps.places.Autocomplete(autocompleteRef.current, {
-            types: ['(regions)'],
-          });
-          autocompleteObj.current.addListener('place_changed', onPlaceChanged);
-        }
-      };
+      script.onload = () => initAutocomplete();
       document.head.appendChild(script);
     } else {
-      if (autocompleteRef.current && !autocompleteObj.current) {
-        autocompleteObj.current = new window.google.maps.places.Autocomplete(autocompleteRef.current, {
-          types: ['(regions)'],
-        });
-        autocompleteObj.current.addListener('place_changed', onPlaceChanged);
-      }
+      initAutocomplete();
     }
   }, []);
+
+  const initAutocomplete = () => {
+    if (autocompleteRef.current && !autocompleteObj.current) {
+      autocompleteObj.current = new window.google.maps.places.Autocomplete(
+        autocompleteRef.current,
+        { types: ["(regions)"] }
+      );
+      autocompleteObj.current.addListener("place_changed", onPlaceChanged);
+    }
+  };
 
   const onPlaceChanged = () => {
     const place = autocompleteObj.current.getPlace();
     if (!place.geometry) {
-      setError('Please select a valid location from the dropdown.');
+      setError("Please select a valid location from the dropdown.");
       return;
     }
     const lat = place.geometry.location.lat();
     const lng = place.geometry.location.lng();
-    setLocationName(place.formatted_address || place.name || '');
+    setLocationName(place.formatted_address || place.name || "");
     fetchHotels(lat, lng);
   };
 
@@ -64,21 +61,19 @@ export default function Home() {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get('/api/googlePlaces', {
-        params: { lat, lng },
-      });
-      if (res.data.status === 'OK' && res.data.results.length > 0) {
+      const res = await axios.get("/api/googlePlaces", { params: { lat, lng } });
+      if (res.data.status === "OK" && res.data.results.length > 0) {
         setHotels(res.data.results);
-      } else if (res.data.status === 'ZERO_RESULTS') {
+      } else if (res.data.status === "ZERO_RESULTS") {
         setHotels([]);
-        setError('No hotels found in this area.');
+        setError("No hotels found in this area.");
       } else {
         setHotels([]);
-        setError('Failed to fetch hotels.');
+        setError("Failed to fetch hotels.");
       }
     } catch {
       setHotels([]);
-      setError('Failed to fetch hotels.');
+      setError("Failed to fetch hotels.");
     }
     setLoading(false);
   };
@@ -86,12 +81,8 @@ export default function Home() {
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          fetchHotels(pos.coords.latitude, pos.coords.longitude);
-        },
-        () => {
-          // User denied geolocation, wait for manual search
-        }
+        (pos) => fetchHotels(pos.coords.latitude, pos.coords.longitude),
+        () => {}
       );
     }
   }, []);
@@ -100,28 +91,44 @@ export default function Home() {
     <main className="min-h-screen bg-gray-50">
       {/* Hero Section */}
       <section
-        className="relative h-96 bg-cover bg-center flex flex-col items-center justify-center"
+        className="relative h-[28rem] bg-cover bg-center flex flex-col items-center justify-center"
         style={{
           backgroundImage:
-            "url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1470&q=80')",
+            "url('https://wallpaperbat.com/img/9672066-amazing-night-wallpaper-dark.jpg')",
         }}
       >
-        <div className="absolute inset-0 bg-black/60"></div>
+        <div className="absolute inset-0 bg-black/50"></div>
         <div className="relative z-10 text-center px-4 max-w-3xl text-white">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6 drop-shadow-lg">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 drop-shadow-lg">
             Discover Stays Near You
           </h1>
-          <p className="mb-8 text-lg drop-shadow">
+          <p className="mb-6 text-lg drop-shadow">
             Find and book your perfect hotel stay in seconds.
           </p>
 
-          {/* Location search with Google Places Autocomplete */}
-          <div className="flex justify-center max-w-lg mx-auto">
+          {/* Search Box */}
+          <div className="flex justify-center max-w-xl mx-auto relative">
+            <svg
+              className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-500"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              width="22"
+              height="22"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1110.5 3a7.5 7.5 0 016.15 13.65z"
+              />
+            </svg>
             <input
               type="text"
               ref={autocompleteRef}
-              placeholder="Enter a city or location"
-              className="px-6 py-4 rounded-l-full w-full text-gray-900 text-lg focus:outline-none focus:ring-4 focus:ring-indigo-500 shadow-md"
+              placeholder="Search hotels by city, landmark, or area..."
+              className="pl-12 pr-6 py-4 rounded-l-full w-full text-gray-900 text-lg placeholder-gray-500 focus:outline-none focus:ring-4 focus:ring-indigo-500 shadow-lg"
               value={locationName}
               onChange={(e) => setLocationName(e.target.value)}
             />
@@ -141,38 +148,29 @@ export default function Home() {
               Search
             </button>
           </div>
-          {error && <p className="mt-4 text-red-400 font-semibold">{error}</p>}
+          {error && <p className="mt-4 text-red-300 font-semibold">{error}</p>}
         </div>
       </section>
 
       {/* Hotels Section */}
       <section className="container mx-auto p-6">
-        <h2 className="text-3xl font-semibold mb-8 border-b pb-2 border-gray-300">
+        <h2 className="text-4xl font-bold mb-8 border-b pb-2 border-gray-300 text-gray-900">
           Hotels Near You
         </h2>
 
-        {loading && (
-          <p className="text-center text-lg text-gray-700">Loading hotels...</p>
-        )}
-
-        {!loading && error && (
-          <p className="text-center text-red-600 text-lg my-10">{error}</p>
-        )}
-
+        {loading && <p className="text-center text-lg text-gray-700">Loading hotels...</p>}
+        {!loading && error && <p className="text-center text-red-600 text-lg my-10">{error}</p>}
         {!loading && !error && hotels.length === 0 && (
-          <p className="text-center text-gray-600 text-lg my-10">
-            No hotels to display.
-          </p>
+          <p className="text-center text-gray-600 text-lg my-10">No hotels to display.</p>
         )}
 
         <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {hotels.map((hotel) => {
             const price = Math.floor(50 + Math.random() * 200);
-
             return (
               <div
                 key={hotel.place_id}
-                className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col hover:shadow-2xl transition-shadow duration-300 cursor-pointer"
+                className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer"
                 onClick={() => (window.location.href = `/hotel/${hotel.place_id}`)}
               >
                 {hotel.photos?.[0] ? (
@@ -191,7 +189,7 @@ export default function Home() {
                       >
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.966a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.921-.755 1.688-1.54 1.118l-3.38-2.455a1 1 0 00-1.175 0l-3.38 2.455c-.784.57-1.838-.197-1.539-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.04 9.393c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.966z" />
                       </svg>
-                      <span>{hotel.rating ?? 'N/A'}</span>
+                      <span>{hotel.rating ?? "N/A"}</span>
                     </div>
                   </div>
                 ) : (
@@ -207,7 +205,6 @@ export default function Home() {
                     </h3>
                     <p className="text-gray-600 text-sm">{hotel.vicinity}</p>
                   </div>
-
                   <div className="flex items-center justify-between mt-4">
                     <span className="text-indigo-600 font-bold text-lg">${price}</span>
                     <button
